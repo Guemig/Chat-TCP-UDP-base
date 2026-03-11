@@ -2,7 +2,7 @@
 
 ## Descripción del Proyecto
 
-Este proyecto consiste en el desarrollo de una aplicación de chat implementada en *Unity, capaz de comunicarse utilizando dos protocolos de red diferentes: * *TCP* y *UDP*.
+Este proyecto consiste en el desarrollo de una aplicación de chat implementada en Unity, capaz de comunicarse utilizando dos protocolos de red diferentes: *TCP* y *UDP*.
 
 La aplicación permite la comunicación entre un *cliente y un servidor*, donde los usuarios pueden enviar:
 
