@@ -227,10 +227,10 @@ Estas modificaciones ampliaron la funcionalidad del sistema manteniendo la arqui
 ### Interfaz seleccion de Chat
 ![Interfaz seleccion de Chat](Assets/images/chat.png)
 
-### UDP
+### Interfaz UDP
 ![UDP](Assets/images/udp.png)
 
-### TCP
+### Interfaz TCP
 ![TCP](Assets/images/tcp.png)
 
 ### Video de Demostración
