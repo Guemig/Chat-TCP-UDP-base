@@ -1,5 +1,4 @@
 using System;
-using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
@@ -18,57 +17,84 @@ public class TCPClient : MonoBehaviour, IClient
 
     public async Task ConnectToServer(string ip, int port)
     {
-        tcpClient = new TcpClient(); //Creates a new instance of the TcpClient class
+        if (isConnected)
+            return;
 
-        await tcpClient.ConnectAsync(ip, port); //Asynchronously connects to the server at the specified IP address and port number
-        networkStream = tcpClient.GetStream();// Retrieves the network stream associated with the connected TCP client
+        tcpClient = new TcpClient();
+
+        Debug.Log("[Client] Connecting to server...");
+
+        await tcpClient.ConnectAsync(ip, port);
+
+        networkStream = tcpClient.GetStream();
 
         isConnected = true;
-        Debug.Log("[Client] Connected to server");
-        OnConnected?.Invoke(); // Invokes the OnConnected event, notifying any subscribed listeners that the client has successfully connected to the server
 
-        _ = ReceiveLoop(); //Starts the receive loop in a separate task to continuously listen for incoming messages from the server without blocking the main thread
+        Debug.Log("[Client] Connected to server");
+
+        OnConnected?.Invoke();
+
+        _ = ReceiveLoop();
     }
 
     private async Task ReceiveLoop()
-    {
-        byte[] buffer = new byte[1024]; // Buffer to store incoming data from the server, 1024 bytes = 1 KB
+{
+    byte[] buffer = new byte[1024];
+    StringBuilder messageBuilder = new StringBuilder();
 
-        try
+    try
+    {
+        while (tcpClient != null && tcpClient.Connected)
         {
-            while (tcpClient != null && tcpClient.Connected) // Continuously checks if the client is still connected to the server
+            int bytesRead = await networkStream.ReadAsync(buffer, 0, buffer.Length);
+
+            if (bytesRead == 0)
+                break;
+
+            string chunk = Encoding.UTF8.GetString(buffer, 0, bytesRead);
+
+            messageBuilder.Append(chunk);
+
+            while (messageBuilder.ToString().Contains("\n"))
             {
-                int bytesRead = await networkStream.ReadAsync(buffer, 0, buffer.Length); // Reads data from the network stream asynchronously and stores it in the buffer, returning the number of bytes read
-                if (bytesRead == 0) // If the server is disconnected, ReadAsync returns 0 bytes read
-                {
-                    Debug.Log("[Client] Server disconnected");
-                    break;
-                }
-                string message = Encoding.UTF8.GetString(buffer, 0, bytesRead);// Converts the received bytes into a string message using UTF-8 encoding
-                OnMessageReceived?.Invoke(message); // Invokes the OnMessageReceived event, passing the received message to any subscribed listeners
-                Debug.Log("[Client] Received from server: " + message);
+                string fullMessage = messageBuilder.ToString();
+                int index = fullMessage.IndexOf("\n");
+
+                string message = fullMessage.Substring(0, index);
+
+                messageBuilder.Remove(0, index + 1);
+
+                Debug.Log("[Client] Received: " + message);
+
+                OnMessageReceived?.Invoke(message);
             }
         }
-        finally
-        {
-            Disconnect();
-        }
     }
-    public async Task SendMessageAsync(string message)
+    catch (Exception e)
     {
-        if (!isConnected || networkStream == null) // Checks if there is an active connection to the server before attempting to send a message
-        {
-            Debug.Log("[Client] Not connected to server");
-            return;
-        }
-
-        byte[] data = Encoding.UTF8.GetBytes(message);// Converts the message string into a byte array using UTF-8 encoding
-        await networkStream.WriteAsync(data, 0, data.Length);// Writes the byte array to the network stream asynchronously, sending it to the connected server
-
-        Debug.Log("[Client] Sent: " + message);
+        Debug.Log("[Client] Error: " + e.Message);
     }
+    finally
+    {
+        Disconnect();
+    }
+}
 
-    public void Disconnect()// Closes the connection to the server and cleans
+    public async Task SendMessageAsync(string message)
+{
+    if (!isConnected || networkStream == null)
+        return;
+
+    message += "\n"; 
+
+    byte[] data = Encoding.UTF8.GetBytes(message);
+
+    await networkStream.WriteAsync(data, 0, data.Length);
+}
+
+    
+
+    public void Disconnect()
     {
         isConnected = false;
 
@@ -78,14 +104,13 @@ public class TCPClient : MonoBehaviour, IClient
         networkStream = null;
         tcpClient = null;
 
-        OnDisconnected?.Invoke(); // Invokes the OnDisconnected event, notifying any subscribed listeners that the client has disconnected from the server
         Debug.Log("[Client] Disconnected");
+
+        OnDisconnected?.Invoke();
     }
 
-    private async void OnDestroy()
+    private void OnDestroy()
     {
         Disconnect();
-        await Task.Delay(100);
     }
 }
-

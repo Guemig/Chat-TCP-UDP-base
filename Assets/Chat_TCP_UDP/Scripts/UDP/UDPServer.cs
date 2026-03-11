@@ -7,8 +7,8 @@ using UnityEngine;
 
 public class UDPServer : MonoBehaviour, IServer
 {
-    private UdpClient udpServer; // UDP client to handle network communication
-    private IPEndPoint remoteEndPoint; // Endpoint to identify the remote client
+    private UdpClient udpServer;
+    private IPEndPoint remoteEndPoint;
 
     public event Action<string> OnMessageReceived;
     public event Action OnConnected;
@@ -19,10 +19,13 @@ public class UDPServer : MonoBehaviour, IServer
     public Task StartServer(int port)
     {
         udpServer = new UdpClient(port);
-        Debug.Log("[Server] Server started. Waiting for messages...");
+
+        Debug.Log("[UDP Server] Server started. Waiting for messages...");
+
         isServerRunning = true;
 
         _ = ReceiveLoop();
+
         return Task.CompletedTask;
     }
 
@@ -32,65 +35,64 @@ public class UDPServer : MonoBehaviour, IServer
         {
             while (isServerRunning)
             {
-                UdpReceiveResult result = await udpServer.ReceiveAsync();// Waits for incoming messages from the server asynchronously
-                string message = Encoding.UTF8.GetString(result.Buffer); // Converts the received bytes into a string message using UTF-8 encoding
-                
+                UdpReceiveResult result = await udpServer.ReceiveAsync();
+
+                remoteEndPoint = result.RemoteEndPoint;
+
+                string message = Encoding.UTF8.GetString(result.Buffer);
+
+                Debug.Log("[UDP Server] Received: " + message);
+
                 if (message == "CONNECT")
                 {
-                    Debug.Log("[Server] Client connected: " + result.RemoteEndPoint);
-                    remoteEndPoint = result.RemoteEndPoint;
-                    await SendMessageAsync("CONNECTED"); // Sends a welcome message back to the client to confirm the handshake
-                    OnConnected?.Invoke(); // Invokes the OnConnected event, notifying any subscribed listeners that a client has connected
-                    continue; // Skip the rest of the loop and wait for the next message
+                    OnConnected?.Invoke();
+                    continue;
                 }
 
-                Debug.Log("[Server] Received: " + message);
-                OnMessageReceived?.Invoke(message);//Invokes the OnMessageReceived event, passing the received message to any subscribed listeners
+                OnMessageReceived?.Invoke(message);
             }
         }
-        finally
+        catch (Exception e)
         {
-            Disconnect();
+            Debug.Log("[UDP Server] Error: " + e.Message);
         }
     }
 
     public async Task SendMessageAsync(string message)
     {
-        if (!isServerRunning) // Checks if there is an active connection to the server
+        if (!isServerRunning || remoteEndPoint == null)
         {
-            Debug.Log("[Server] The server isn´t running");
+            Debug.Log("[UDP Server] No client connected");
             return;
         }
 
-        byte[] data = Encoding.UTF8.GetBytes(message);// Converts the message string into a byte array
-        await udpServer.SendAsync(data, data.Length, remoteEndPoint); // Sends the byte array to the server using UDP asynchronously
+        byte[] data = Encoding.UTF8.GetBytes(message);
 
-        Debug.Log("[Server] Sent: " + message);
+        await udpServer.SendAsync(data, data.Length, remoteEndPoint);
+
+        Debug.Log("[UDP Server] Sent: " + message);
     }
-
 
     public void Disconnect()
     {
         if (!isServerRunning)
         {
-            Debug.Log("[Server] The server is not running");
+            Debug.Log("[UDP Server] Server is not running");
             return;
         }
 
         isServerRunning = false;
 
         udpServer?.Close();
-        udpServer?.Dispose();// Closes the UDP client and releases any resources associated with it
         udpServer = null;
 
-        Debug.Log("[Server] Disconnected");
-        OnDisconnected?.Invoke();// Invokes the OnDisconnected event, notifying any subscribed listeners that the client has disconnected from the server
+        Debug.Log("[UDP Server] Disconnected");
 
+        OnDisconnected?.Invoke();
     }
 
-    private async void OnDestroy()
+    private void OnDestroy()
     {
         Disconnect();
-        await Task.Delay(100); 
     }
 }
