@@ -225,13 +225,13 @@ Estas modificaciones ampliaron la funcionalidad del sistema manteniendo la arqui
 ## Capturas de Pantalla
 
 ### Interfaz seleccion de Chat
-![Interfaz seleccion de Chat](Assets/Images/chat.png)
+![Interfaz seleccion de Chat](Assets/images/chat.png)
 
 ### UDP
-![UDP](Assets/Images/udp.png)
+![UDP](Assets/images/udp.png)
 
 ### TCP
-![TCP](Assets/Images/tcp.png)
+![TCP](Assets/images/tcp.png)
 
 ### Video de Demostración
 
