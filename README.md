@@ -261,5 +261,4 @@ Además, el proyecto permitió comprender mejor cómo funcionan los protocolos d
 
 Proyecto desarrollado por:
 
-**Juan David Goyeneche**
-**Luis Miguel Guerrero**
+**Juan David Goyeneche y Luis Miguel Guerrero**
